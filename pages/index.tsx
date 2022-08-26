@@ -40,23 +40,46 @@ const index: FunctionComponent<Props> = ({ streamerData }) => {
 	}
 
 	const getBonusList = async () => {
+		console.log(`started at ${new Date().getTime()}`)
 		let bonusForCountry = streamerData.countryBonusList.filter(
 			it => it.label === country
 		)
-		if (bonusForCountry.length == 0)
+		if (bonusForCountry.length == 0) {
 			bonusForCountry = streamerData.countryBonusList.filter(
 				it => it.label === 'row'
 			)
+			setCountry('row')
+		}
 
-		const requests = bonusForCountry[0].bonuses.map(b =>
-			axios.get(`${configuration.api}/bonuses/${b.id}`)
-		)
+		const ordering = streamerData.countryBonusList
+			.filter(it => it.label === country)[0]
+			.ordering.split(' ')
 
-		const bList = await Promise.all(requests)
+		// const requests = bonusForCountry[0].bonuses.map((b) =>
+		//   axios.get(`${configuration.api}/bonuses/${b.id}`)
+		// );
 
-		console.log(bList.map(r => r.data as StreamerBonus[]))
+		// const bList = await Promise.all(requests);
+		// let unorderedBonuses = bList.map((r) => r.data as StreamerBonus);
 
-		setBonuses(bList.map(r => r.data as StreamerBonus))
+		let unorderedBonuses = [...streamerData.bonuses]
+		console.log(unorderedBonuses, 'ub')
+
+		let ordered: StreamerBonus[] = []
+
+		ordering.forEach(code => {
+			const matchingBonus = unorderedBonuses.find(
+				it => it.compareCode === code
+			)
+			if (matchingBonus) {
+				ordered.push(matchingBonus)
+				unorderedBonuses = unorderedBonuses.filter(
+					b => b.compareCode !== code
+				)
+			}
+		})
+
+		setBonuses([...ordered, ...unorderedBonuses])
 		setLoading(false)
 	}
 
